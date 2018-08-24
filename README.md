@@ -23,4 +23,11 @@ TensorboardX
 
 # Dataset
 
-You should execute `python data.py` first to download necessary data and preprocess data.
+You should execute `python data.py` first to download necessary data and preprocess MovieLens-20M dataset.
+
+<img src="https://raw.githubusercontent.com/belepi93/vae-cf-pytorch/master/pics/data.png" width="500">
+
+# Results
+
+<img src="https://raw.githubusercontent.com/belepi93/vae-cf-pytorch/master/pics/result-experiment.png" width="800">
+
