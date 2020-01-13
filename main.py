@@ -14,6 +14,8 @@ import metric
 parser = argparse.ArgumentParser(description='PyTorch Variational Autoencoders for Collaborative Filtering')
 parser.add_argument('--data', type=str, default='ml-20m',
                     help='Movielens-20m dataset location')
+parser.add_argument('--shallow', action='store_true',
+                    help='Train shallow autoencoder instead of VAE')
 parser.add_argument('--lr', type=float, default=1e-4,
                     help='initial learning rate')
 parser.add_argument('--wd', type=float, default=0.00,
@@ -62,11 +64,15 @@ idxlist = list(range(N))
 # Build the model
 ###############################################################################
 
-p_dims = [200, 600, n_items]
-model = models.MultiVAE(p_dims).to(device)
-
-optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=args.wd)
-criterion = models.loss_function
+if args.shallow:
+    model = models.MultiSAE(n_items)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=args.wd)
+    criterion = models.rmse_loss
+else:
+    p_dims = [200, 600, n_items]
+    model = models.MultiVAE(p_dims).to(device)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=args.wd)
+    criterion = models.vae_loss
 
 ###############################################################################
 # Training code
@@ -96,7 +102,7 @@ def naive_sparse2tensor(data):
     return torch.FloatTensor(data.toarray())
 
 
-def train():
+def train(model):
     # Turn on training mode
     model.train()
     train_loss = 0.0
@@ -194,12 +200,13 @@ def evaluate(data_tr, data_te):
 
 best_n100 = -np.inf
 update_count = 0
+print('Starting training...')
 
 # At any point you can hit Ctrl + C to break out of training early.
 try:
     for epoch in range(1, args.epochs + 1):
         epoch_start_time = time.time()
-        train()
+        train(model)
         val_loss, n100, r20, r50 = evaluate(vad_data_tr, vad_data_te)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:4.2f}s | valid loss {:4.2f} | '
