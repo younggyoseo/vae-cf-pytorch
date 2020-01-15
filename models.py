@@ -150,9 +150,10 @@ class MultiSAE(nn.Module):
     https://arxiv.org/pdf/1905.03375.pdf
     """
 
-    def __init__(self, n_inputs, dropout=0.5, zero_diag=True, bias=False):
+    def __init__(self, n_inputs, normalize=False, dropout=0., zero_diag=True, bias=False):
         super(MultiSAE, self).__init__()
 
+        self.normalize = normalize
         self.weight = Parameter(torch.Tensor(n_inputs, n_inputs))
         if bias:
             self.bias = Parameter(torch.Tensor(n_inputs))
@@ -163,11 +164,12 @@ class MultiSAE(nn.Module):
         self.drop = nn.Dropout(dropout)
         self.init_weights()
 
-    def forward(self, input):
+    def forward(self, h):
 
-        h = F.normalize(input)
+        if self.normalize:
+            h = F.normalize(h, dim=-1)
         h = self.drop(h)
-        h = F.linear(input, self.weight, self.bias)
+        h = F.linear(h, self.weight, self.bias)
 
         return h, None, None  # no mu, log_var
 
