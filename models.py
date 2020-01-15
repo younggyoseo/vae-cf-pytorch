@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch
 import numpy as np
 
+
 class MultiDAE(nn.Module):
     """
     Container module for Multi-DAE.
@@ -25,11 +26,11 @@ class MultiDAE(nn.Module):
 
         self.dims = self.q_dims + self.p_dims[1:]
         self.layers = nn.ModuleList([nn.Linear(d_in, d_out) for
-            d_in, d_out in zip(self.dims[:-1], self.dims[1:])])
+                                     d_in, d_out in zip(self.dims[:-1], self.dims[1:])])
         self.drop = nn.Dropout(dropout)
-        
+
         self.init_weights()
-    
+
     def forward(self, input):
         h = F.normalize(input)
         h = self.drop(h)
@@ -75,22 +76,22 @@ class MultiVAE(nn.Module):
         # Last dimension of q- network is for mean and variance
         temp_q_dims = self.q_dims[:-1] + [self.q_dims[-1] * 2]
         self.q_layers = nn.ModuleList([nn.Linear(d_in, d_out) for
-            d_in, d_out in zip(temp_q_dims[:-1], temp_q_dims[1:])])
+                                       d_in, d_out in zip(temp_q_dims[:-1], temp_q_dims[1:])])
         self.p_layers = nn.ModuleList([nn.Linear(d_in, d_out) for
-            d_in, d_out in zip(self.p_dims[:-1], self.p_dims[1:])])
-        
+                                       d_in, d_out in zip(self.p_dims[:-1], self.p_dims[1:])])
+
         self.drop = nn.Dropout(dropout)
         self.init_weights()
-    
+
     def forward(self, input):
         mu, logvar = self.encode(input)
         z = self.reparameterize(mu, logvar)
         return self.decode(z), mu, logvar
-    
+
     def encode(self, input):
         h = F.normalize(input)
         h = self.drop(h)
-        
+
         for i, layer in enumerate(self.q_layers):
             h = layer(h)
             if i != len(self.q_layers) - 1:
@@ -107,7 +108,7 @@ class MultiVAE(nn.Module):
             return eps.mul(std).add_(mu)
         else:
             return mu
-    
+
     def decode(self, z):
         h = z
         for i, layer in enumerate(self.p_layers):
@@ -127,7 +128,7 @@ class MultiVAE(nn.Module):
 
             # Normal Initialization for Biases
             layer.bias.data.normal_(0.0, 0.001)
-        
+
         for layer in self.p_layers:
             # Xavier Initialization for weights
             size = layer.weight.size()
@@ -154,14 +155,14 @@ class MultiSAE(nn.Module):
 
         self.weight = Parameter(torch.Tensor(n_inputs, n_inputs))
         if bias:
-            self.bias = Parameter(torch.Tensor(out_features))
+            self.bias = Parameter(torch.Tensor(n_inputs))
         else:
             self.bias = None
         self.zero_diag = zero_diag
 
         self.drop = nn.Dropout(dropout)
         self.init_weights()
-    
+
     def forward(self, input):
 
         h = F.normalize(input)
@@ -192,5 +193,5 @@ def vae_loss(recon_x, x, mu, logvar, anneal=1.0):
 
 
 def rmse_loss(recon_x, x, mu, logvar, anneal=1.0):
-    
+
     return torch.sqrt(F.mse_loss(recon_x, x))
