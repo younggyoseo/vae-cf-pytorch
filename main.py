@@ -180,9 +180,9 @@ def evaluate(data_tr, data_te):
             recon_batch = recon_batch.cpu().numpy()
             recon_batch[data.nonzero()] = -np.inf
 
-            n100 = metric.NDCG_binary_at_k_batch(recon_batch, heldout_data, 100)
-            r20 = metric.Recall_at_k_batch(recon_batch, heldout_data, 20)
-            r50 = metric.Recall_at_k_batch(recon_batch, heldout_data, 50)
+            n100 = metric.ndcg_binary_at_k_batch(recon_batch, heldout_data, 100)
+            r20 = metric.recall_at_k_batch(recon_batch, heldout_data, 20)
+            r50 = metric.recall_at_k_batch(recon_batch, heldout_data, 50)
 
             n100_list.append(n100)
             r20_list.append(r20)
