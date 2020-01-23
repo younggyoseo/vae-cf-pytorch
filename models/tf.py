@@ -212,7 +212,7 @@ def train_one_epoch(model, sess, x_train,
 
 
 @gin.configurable
-def train(model, x_train, x_val, y_val, log_dir, batch_size=100, n_epochs=10):
+def train(model, x_train, x_val, y_val, batch_size=100, n_epochs=10, log_dir=None):
     """Train a tensorflow recommender
 
     TODO: model snapshots (check lines containing "best_ndcg" in Liang's notebook)

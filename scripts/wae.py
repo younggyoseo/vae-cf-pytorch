@@ -57,4 +57,4 @@ if __name__ == '__main__':
     model = build_model(x_train)
 
     print('Training...')
-    train(model, x_train, x_val, y_val, args.log_dir)
+    train(model, x_train, x_val, y_val, log_dir=args.log_dir)
