@@ -218,7 +218,7 @@ def train(model, x_train, x_val, y_val, log_dir, batch_size=100, n_epochs=10):
     TODO: model snapshots (check lines containing "best_ndcg" in Liang's notebook)
     """
     with tf.Session() as sess:
-        metric_logger = MetricLogger(log_dir, sess)
+        metric_logger = MetricLogger(log_dir, sess) if log_dir is not None else None
 
         init = tf.global_variables_initializer()
         sess.run(init)
