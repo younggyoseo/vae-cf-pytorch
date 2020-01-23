@@ -2,7 +2,7 @@
 build_model.Model = @WAE
 build_model.n_layers = 1
 build_model.eps = 0.01
-build_model.slim_path = '/Users/jan/experiments/wae/pruned_slim.npz'
+build_model.slim_path = '/home/jvanbalen/experiments/wae/pruned_slim.npz'
 
 WAE.use_biases = False
 WAE.normalize_inputs = False
