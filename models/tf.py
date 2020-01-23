@@ -3,19 +3,20 @@ import os
 import datetime
 from collections import defaultdict
 
+import gin
 import numpy as np
-from scipy.sparse import issparse
-
 import tensorflow as tf
+from scipy.sparse import issparse
 from tensorflow.contrib.layers import apply_regularization, l2_regularizer
 
 from metric import ndcg_binary_at_k_batch
 
 
+@gin.configurable
 class MultiWAE(object):
 
-    def __init__(self, inits, use_biases=True, normalize_inputs=False, lam=0.01, lr=3e-4,
-                 random_seed=None):
+    def __init__(self, inits, use_biases=True, normalize_inputs=False,
+                 keep_prob=1.0, lam=0.01, lr=3e-4, random_seed=None):
 
         self.inits = inits
         self.use_biases = use_biases
@@ -25,9 +26,8 @@ class MultiWAE(object):
         self.random_seed = random_seed
 
         # placeholders and weights
-        self.input_ph = tf.placeholder(
-            dtype=tf.float32, shape=[None, inits[0].shape[1]])
-        self.keep_prob_ph = tf.placeholder_with_default(1.0, shape=None)
+        self.input_ph = tf.placeholder(dtype=tf.float32, shape=[None, inits[0].shape[1]])
+        self.keep_prob_ph = tf.placeholder_with_default(keep_prob, shape=None)
         self.construct_weights()
 
         # build graph
@@ -101,12 +101,13 @@ class MultiWAE(object):
         return loss
 
 
+@gin.configurable
 class WAE(MultiWAE):
 
     def __init__(self, inits, use_biases=True, normalize_inputs=False,
-                 lam=0.01, lr=3e-4, random_seed=None):
+                 keep_prob=1.0, lam=0.01, lr=3e-4, random_seed=None):
         super(WAE, self).__init__(inits, use_biases=use_biases, normalize_inputs=normalize_inputs,
-                                  lam=lam, lr=lr, random_seed=random_seed)
+                                  keep_prob=keep_prob, lam=lam, lr=lr, random_seed=random_seed)
 
     def loss_fn(self):
 
@@ -203,21 +204,21 @@ def train_one_epoch(model, sess, x_train,
             x = x.toarray()
         x = x.astype('float32')
 
-        feed_dict = {model.input_ph: x,
-                     model.keep_prob_ph: 1.0}
+        feed_dict = {model.input_ph: x}
         summary_train, _ = sess.run([model.summaries, model.train_op], feed_dict=feed_dict)
 
         if metric_logger is not None:
             metric_logger.log_summaries({'summary': summary_train})
 
 
-def train(model, x_train, x_val, y_val, log_dir, batch_size=100, n_epochs=10):
+@gin.configurable
+def train(model, x_train, x_val, y_val, batch_size=100, n_epochs=10, log_dir=None):
     """Train a tensorflow recommender
 
     TODO: model snapshots (check lines containing "best_ndcg" in Liang's notebook)
     """
     with tf.Session() as sess:
-        metric_logger = MetricLogger(log_dir, sess)
+        metric_logger = MetricLogger(log_dir, sess) if log_dir is not None else None
 
         init = tf.global_variables_initializer()
         sess.run(init)
