@@ -3,6 +3,7 @@ import pandas as pd
 from scipy import sparse
 import numpy as np
 
+
 class DataLoader():
     '''
     Load Movielens-20m dataset
@@ -12,7 +13,7 @@ class DataLoader():
         assert os.path.exists(self.pro_dir), "Preprocessed files does not exist. Run data.py"
 
         self.n_items = self.load_n_items()
-    
+
     def load_data(self, datatype='train'):
         if datatype == 'train':
             return self._load_train_data()
@@ -22,7 +23,7 @@ class DataLoader():
             return self._load_tr_te_data(datatype)
         else:
             raise ValueError("datatype should be in [train, validation, test]")
-        
+
     def load_n_items(self):
         unique_sid = list()
         with open(os.path.join(self.pro_dir, 'unique_sid.txt'), 'r') as f:
@@ -30,10 +31,10 @@ class DataLoader():
                 unique_sid.append(line.strip())
         n_items = len(unique_sid)
         return n_items
-    
+
     def _load_train_data(self):
         path = os.path.join(self.pro_dir, 'train.csv')
-        
+
         tp = pd.read_csv(path)
         n_users = tp['uid'].max() + 1
 
@@ -42,7 +43,7 @@ class DataLoader():
                                  (rows, cols)), dtype='float64',
                                  shape=(n_users, self.n_items))
         return data
-    
+
     def _load_tr_te_data(self, datatype='test'):
         tr_path = os.path.join(self.pro_dir, '{}_tr.csv'.format(datatype))
         te_path = os.path.join(self.pro_dir, '{}_te.csv'.format(datatype))
@@ -57,27 +58,32 @@ class DataLoader():
         rows_te, cols_te = tp_te['uid'] - start_idx, tp_te['sid']
 
         data_tr = sparse.csr_matrix((np.ones_like(rows_tr),
-                                    (rows_tr, cols_tr)), dtype='float64', shape=(end_idx - start_idx + 1, self.n_items))
+                                    (rows_tr, cols_tr)), dtype='float64',
+                                    shape=(end_idx - start_idx + 1, self.n_items))
         data_te = sparse.csr_matrix((np.ones_like(rows_te),
-                                    (rows_te, cols_te)), dtype='float64', shape=(end_idx - start_idx + 1, self.n_items))
+                                    (rows_te, cols_te)), dtype='float64',
+                                    shape=(end_idx - start_idx + 1, self.n_items))
         return data_tr, data_te
+
 
 def get_count(tp, id):
     playcount_groupbyid = tp[[id]].groupby(id, as_index=False)
     count = playcount_groupbyid.size()
     return count
 
+
 def filter_triplets(tp, min_uc=5, min_sc=0):
     if min_sc > 0:
         itemcount = get_count(tp, 'movieId')
         tp = tp[tp['movieId'].isin(itemcount.index[itemcount >= min_sc])]
-    
+
     if min_uc > 0:
         usercount = get_count(tp, 'userId')
         tp = tp[tp['userId'].isin(usercount.index[usercount >= min_uc])]
-    
+
     usercount, itemcount = get_count(tp, 'userId'), get_count(tp, 'movieId')
     return tp, usercount, itemcount
+
 
 def split_train_test_proportion(data, test_prop=0.2):
     data_grouped_by_user = data.groupby('userId')
@@ -90,24 +96,25 @@ def split_train_test_proportion(data, test_prop=0.2):
 
         if n_items_u >= 5:
             idx = np.zeros(n_items_u, dtype='bool')
-            idx[np.random.choice(n_items_u, size=int(test_prop * n_items_u), replace=False).astype('int64')] = True
+            sample = np.random.choice(n_items_u, size=int(test_prop * n_items_u), replace=False)
+            idx[sample.astype('int64')] = True
 
             tr_list.append(group[np.logical_not(idx)])
             te_list.append(group[idx])
-        
+
         else:
             tr_list.append(group)
-        
+
     data_tr = pd.concat(tr_list)
     data_te = pd.concat(te_list)
 
     return data_tr, data_te
 
+
 def numerize(tp, profile2id, show2id):
     uid = tp['userId'].apply(lambda x: profile2id[x])
     sid = tp['movieId'].apply(lambda x: show2id[x])
     return pd.DataFrame(data={'uid': uid, 'sid': sid}, columns=['uid', 'sid'])
-
 
 
 if __name__ == '__main__':
@@ -145,11 +152,11 @@ if __name__ == '__main__':
 
     if not os.path.exists(pro_dir):
         os.makedirs(pro_dir)
-    
+
     with open(os.path.join(pro_dir, 'unique_sid.txt'), 'w') as f:
         for sid in unique_sid:
             f.write('%s\n' % sid)
-    
+
     vad_plays = raw_data.loc[raw_data['userId'].isin(vd_users)]
     vad_plays = vad_plays.loc[vad_plays['movieId'].isin(unique_sid)]
 
