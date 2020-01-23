@@ -15,8 +15,8 @@ from metric import ndcg_binary_at_k_batch
 @gin.configurable
 class MultiWAE(object):
 
-    def __init__(self, inits, use_biases=True, normalize_inputs=False, lam=0.01, lr=3e-4,
-                 random_seed=None):
+    def __init__(self, inits, use_biases=True, normalize_inputs=False,
+                 keep_prob=1.0, lam=0.01, lr=3e-4, random_seed=None):
 
         self.inits = inits
         self.use_biases = use_biases
@@ -26,9 +26,8 @@ class MultiWAE(object):
         self.random_seed = random_seed
 
         # placeholders and weights
-        self.input_ph = tf.placeholder(
-            dtype=tf.float32, shape=[None, inits[0].shape[1]])
-        self.keep_prob_ph = tf.placeholder_with_default(1.0, shape=None)
+        self.input_ph = tf.placeholder(dtype=tf.float32, shape=[None, inits[0].shape[1]])
+        self.keep_prob_ph = tf.placeholder_with_default(keep_prob, shape=None)
         self.construct_weights()
 
         # build graph
@@ -106,9 +105,9 @@ class MultiWAE(object):
 class WAE(MultiWAE):
 
     def __init__(self, inits, use_biases=True, normalize_inputs=False,
-                 lam=0.01, lr=3e-4, random_seed=None):
+                 keep_prob=1.0, lam=0.01, lr=3e-4, random_seed=None):
         super(WAE, self).__init__(inits, use_biases=use_biases, normalize_inputs=normalize_inputs,
-                                  lam=lam, lr=lr, random_seed=random_seed)
+                                  keep_prob=keep_prob, lam=lam, lr=lr, random_seed=random_seed)
 
     def loss_fn(self):
 
@@ -205,8 +204,7 @@ def train_one_epoch(model, sess, x_train,
             x = x.toarray()
         x = x.astype('float32')
 
-        feed_dict = {model.input_ph: x,
-                     model.keep_prob_ph: 1.0}
+        feed_dict = {model.input_ph: x}
         summary_train, _ = sess.run([model.summaries, model.train_op], feed_dict=feed_dict)
 
         if metric_logger is not None:
