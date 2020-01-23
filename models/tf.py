@@ -14,10 +14,12 @@ from metric import ndcg_binary_at_k_batch
 
 class MultiWAE(object):
 
-    def __init__(self, inits, use_biases=True, lam=0.01, lr=3e-4, random_seed=None):
+    def __init__(self, inits, use_biases=True, normalize_inputs=False, lam=0.01, lr=3e-4,
+                 random_seed=None):
 
         self.inits = inits
         self.use_biases = use_biases
+        self.normalize_inputs = normalize_inputs
         self.lam = lam
         self.lr = lr
         self.random_seed = random_seed
@@ -68,7 +70,10 @@ class MultiWAE(object):
 
     def forward_pass(self):
         # construct forward graph
-        h = tf.nn.l2_normalize(self.input_ph, 1)
+        if self.normalize_inputs:
+            h = tf.nn.l2_normalize(self.input_ph, 1)
+        else:
+            h = self.input_ph
         h = tf.nn.dropout(h, rate=1-self.keep_prob_ph)
 
         for i, w in enumerate(self.weights):
@@ -98,8 +103,10 @@ class MultiWAE(object):
 
 class WAE(MultiWAE):
 
-    def __init__(self, inits, use_biases=True, lam=0.1, lr=3e-4, random_seed=None):
-        super(WAE, self).__init__(inits, use_biases, lam=lam, lr=lr, random_seed=random_seed)
+    def __init__(self, inits, use_biases=True, normalize_inputs=False,
+                 lam=0.01, lr=3e-4, random_seed=None):
+        super(WAE, self).__init__(inits, use_biases=use_biases, normalize_inputs=normalize_inputs,
+                                  lam=lam, lr=lr, random_seed=random_seed)
 
     def loss_fn(self):
 
@@ -197,7 +204,7 @@ def train_one_epoch(model, sess, x_train,
         x = x.astype('float32')
 
         feed_dict = {model.input_ph: x,
-                     model.keep_prob_ph: 0.5}
+                     model.keep_prob_ph: 1.0}
         summary_train, _ = sess.run([model.summaries, model.train_op], feed_dict=feed_dict)
 
         if metric_logger is not None:
