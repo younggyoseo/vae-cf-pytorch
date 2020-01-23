@@ -3,15 +3,16 @@ import os
 import datetime
 from collections import defaultdict
 
+import gin
 import numpy as np
-from scipy.sparse import issparse
-
 import tensorflow as tf
+from scipy.sparse import issparse
 from tensorflow.contrib.layers import apply_regularization, l2_regularizer
 
 from metric import ndcg_binary_at_k_batch
 
 
+@gin.configurable
 class MultiWAE(object):
 
     def __init__(self, inits, use_biases=True, normalize_inputs=False, lam=0.01, lr=3e-4,
@@ -101,6 +102,7 @@ class MultiWAE(object):
         return loss
 
 
+@gin.configurable
 class WAE(MultiWAE):
 
     def __init__(self, inits, use_biases=True, normalize_inputs=False,
@@ -211,6 +213,7 @@ def train_one_epoch(model, sess, x_train,
             metric_logger.log_summaries({'summary': summary_train})
 
 
+@gin.configurable
 def train(model, x_train, x_val, y_val, log_dir, batch_size=100, n_epochs=10):
     """Train a tensorflow recommender
 
