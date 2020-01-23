@@ -23,8 +23,12 @@ and two new (sparse, full-rank, multi-layer) auto-encoders, implemented in Tenso
 ```
 Python 3.6
 numpy
-tensorflow==1.5, tensorboard   # for TF models
-pytorch==0.4, tensorboardX   # for PyTorch models
+scipy
+pandas
+tensorflow==1.15  # for TF models
+tensorboard
+pytorch==0.4  # for PyTorch models
+tensorboardX
 ```
 
 ## References
