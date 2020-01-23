@@ -14,9 +14,10 @@ from metric import ndcg_binary_at_k_batch
 
 class MultiWAE(object):
 
-    def __init__(self, inits, lam=0.01, lr=1e-3, random_seed=None):
+    def __init__(self, inits, use_biases=True, lam=0.01, lr=3e-4, random_seed=None):
 
         self.inits = inits
+        self.use_biases = use_biases
         self.lam = lam
         self.lr = lr
         self.random_seed = random_seed
@@ -52,27 +53,28 @@ class MultiWAE(object):
             weight_data = tf.Variable(init.data.astype(np.float32), name=weight_key)
             weight = tf.SparseTensor(weight_inds, tf.identity(weight_data), dense_shape=init.shape)
             weight = tf.sparse.reorder(weight)  # seems to be suggested here:
-            #             https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor?version=stable
-
+            # https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor?version=stable
             self.weights.append(weight)
 
-            bias_init = tf.zeros_initializer()
-            self.biases.append(tf.get_variable(
-                name=bias_key, shape=[init.shape[0]],
-                initializer=bias_init))
-
-            # add summary stats
+            #  summary for tensorboard
             tf.summary.histogram(weight_key, weight_data)
-            tf.summary.histogram(bias_key, self.biases[-1])
+
+            if self.use_biases:
+                bias_init = tf.zeros_initializer()
+                self.biases.append(tf.get_variable(
+                    name=bias_key, shape=[init.shape[0]],
+                    initializer=bias_init))
+                tf.summary.histogram(bias_key, self.biases[-1])
 
     def forward_pass(self):
         # construct forward graph
         h = tf.nn.l2_normalize(self.input_ph, 1)
         h = tf.nn.dropout(h, rate=1-self.keep_prob_ph)
 
-        for i, (w, b) in enumerate(zip(self.weights, self.biases)):
+        for i, w in enumerate(self.weights):
             h = tf.transpose(tf.sparse.sparse_dense_matmul(w, h, adjoint_a=True, adjoint_b=True))
-            h = h + b
+            if len(self.biases):
+                h = h + self.biases[i]
             if i != len(self.weights) - 1:
                 h = tf.nn.tanh(h)
 
@@ -96,8 +98,8 @@ class MultiWAE(object):
 
 class WAE(MultiWAE):
 
-    def __init__(self, inits, lam=0.1, lr=3e-4, random_seed=None):
-        super(WAE, self).__init__(inits, lam=lam, lr=lr, random_seed=random_seed)
+    def __init__(self, inits, use_biases=True, lam=0.1, lr=3e-4, random_seed=None):
+        super(WAE, self).__init__(inits, use_biases, lam=lam, lr=lr, random_seed=random_seed)
 
     def loss_fn(self):
 
@@ -143,7 +145,7 @@ class MetricLogger(object):
             self.summary_writer.add_summary(summary, global_step=step)
 
 
-def evaluate(model, sess, x_val, y_val, batch_size=1000, metric_logger=None):
+def evaluate(model, sess, x_val, y_val, batch_size=100, metric_logger=None):
     """Evaluate model on observed and unobserved validation data x_val, y_val
     """
     n_val = x_val.shape[0]
@@ -207,8 +209,8 @@ def train(model, x_train, x_val, y_val, log_dir, batch_size=100, n_epochs=10):
 
     TODO: model snapshots (check lines containing "best_ndcg" in Liang's notebook)
     """
-    metric_logger = MetricLogger(log_dir)
     with tf.Session() as sess:
+        metric_logger = MetricLogger(log_dir, sess)
 
         init = tf.global_variables_initializer()
         sess.run(init)
