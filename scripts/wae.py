@@ -1,6 +1,6 @@
 """
 Ex.:
-python experiment.py --data ~/data/ml-20m/ --log-dir ~/experiments/wae/logs/WAE/ \
+python wae.py --data ~/data/ml-20m/ --log-dir ~/experiments/wae/logs/WAE/ \
     --config config/001.gin
 """
 import gin
