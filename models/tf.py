@@ -16,11 +16,13 @@ from metric import ndcg_binary_at_k_batch
 class MultiWAE(object):
 
     def __init__(self, inits, use_biases=True, normalize_inputs=False,
+                 shared_weights=False,
                  keep_prob=1.0, lam=0.01, lr=3e-4, random_seed=None):
 
         self.inits = inits
         self.use_biases = use_biases
         self.normalize_inputs = normalize_inputs
+        self.shared_weights = shared_weights
         self.lam = lam
         self.lr = lr
         self.random_seed = random_seed
@@ -50,12 +52,15 @@ class MultiWAE(object):
             weight_key = "weight_{}to{}".format(i, i+1)
             bias_key = "bias_{}".format(i+1)
 
-            init = init.tocoo()
-            weight_inds = tf.convert_to_tensor(list(zip(init.row, init.col)), dtype=np.int64)
-            weight_data = tf.Variable(init.data.astype(np.float32), name=weight_key)
-            weight = tf.SparseTensor(weight_inds, tf.identity(weight_data), dense_shape=init.shape)
-            weight = tf.sparse.reorder(weight)  # seems to be suggested here:
-            # https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor?version=stable
+            if self.shared_weights and i > 0:
+                weights = self.weights[-1]
+            else:
+                init = init.tocoo()
+                weight_inds = tf.convert_to_tensor(list(zip(init.row, init.col)), dtype=np.int64)
+                weight_data = tf.Variable(init.data.astype(np.float32), name=weight_key)
+                weight = tf.SparseTensor(weight_inds, tf.identity(weight_data), dense_shape=init.shape)
+                weight = tf.sparse.reorder(weight)  # seems to be suggested here:
+                # https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor?version=stable
             self.weights.append(weight)
 
             #  summary for tensorboard
@@ -105,8 +110,10 @@ class MultiWAE(object):
 class WAE(MultiWAE):
 
     def __init__(self, inits, use_biases=True, normalize_inputs=False,
+                 shared_weights=False,
                  keep_prob=1.0, lam=0.01, lr=3e-4, random_seed=None):
         super(WAE, self).__init__(inits, use_biases=use_biases, normalize_inputs=normalize_inputs,
+                                  shared_weights=shared_weights,
                                   keep_prob=keep_prob, lam=lam, lr=lr, random_seed=random_seed)
 
     def loss_fn(self):

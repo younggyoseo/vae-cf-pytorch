@@ -1,0 +1,16 @@
+# WAE with shared weights
+
+build_model.Model = @WAE
+build_model.n_layers = 1
+build_model.eps = 0.01
+build_model.slim_path = '/home/jvanbalen/experiments/wae/pruned_slim.npz'
+
+WAE.use_biases = False
+WAE.normalize_inputs = False
+WAE.shared_weights = True
+WAE.keep_prob = 0.5
+WAE.lam = 0.0
+WAE.lr = 3e-4
+
+train.batch_size = 100
+train.n_epochs = 10
