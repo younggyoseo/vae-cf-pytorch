@@ -52,13 +52,12 @@ class MultiWAE(object):
             weight_key = "weight_{}to{}".format(i, i+1)
             bias_key = "bias_{}".format(i+1)
 
-            if self.shared_weights and i > 0:
-                weights = self.weights[-1]
-            else:
+            if not self.shared_weights or i == 0:
                 init = init.tocoo()
                 weight_inds = tf.convert_to_tensor(list(zip(init.row, init.col)), dtype=np.int64)
                 weight_data = tf.Variable(init.data.astype(np.float32), name=weight_key)
-                weight = tf.SparseTensor(weight_inds, tf.identity(weight_data), dense_shape=init.shape)
+                weight = tf.SparseTensor(weight_inds, tf.identity(weight_data),
+                                         dense_shape=init.shape)
                 weight = tf.sparse.reorder(weight)  # seems to be suggested here:
                 # https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor?version=stable
             self.weights.append(weight)
