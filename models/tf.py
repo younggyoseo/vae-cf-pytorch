@@ -48,25 +48,13 @@ class MultiWAE(object):
         self.biases = []
 
         # define weights
-        w = None
         for i, init in enumerate(self.inits):
             weight_key = "weight_{}to{}".format(i, i+1)
             bias_key = "bias_{}".format(i+1)
 
-            if self.shared_weights and i > 0:
-                self.weights.append(w)   # use w from previous iteration
-            else:
-                init = init.tocoo()
-                w_inds = tf.convert_to_tensor(list(zip(init.row, init.col)), dtype=np.int64)
-                w_data = tf.Variable(init.data.astype(np.float32), name=weight_key)
-                w = tf.SparseTensor(w_inds, tf.identity(w_data),
-                                    dense_shape=init.shape)
-                w = tf.sparse.reorder(w)  # seems to be suggested here:
-                # https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor?version=stable
-                self.weights.append(w)
-
-            #  summary for tensorboard
-            tf.summary.histogram(weight_key, w_data)
+            if i == 0 or not self.shared_weights:
+                w = sparse_tensor_from_init(init, weight_key=weight_key)
+            self.weights.append(w)
 
             if self.use_biases:
                 bias_init = tf.zeros_initializer()
@@ -245,3 +233,19 @@ def train(model, x_train, x_val, y_val, batch_size=100, n_epochs=10, log_dir=Non
             print('Validation NDCG = {}'.format(ndcg))
 
     return ndcg
+
+
+def sparse_tensor_from_init(init, weight_key='sparse_weight'):
+
+    init = init.tocoo()
+    w_inds = tf.convert_to_tensor(list(zip(init.row, init.col)), dtype=np.int64)
+    w_data = tf.Variable(init.data.astype(np.float32), name=weight_key)
+    w = tf.SparseTensor(w_inds, tf.identity(w_data),
+                        dense_shape=init.shape)
+    w = tf.sparse.reorder(w)  # as suggested here:
+    # https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor?version=stable
+
+    #  summary for tensorboard
+    tf.summary.histogram(weight_key, w.data)
+
+    return w
