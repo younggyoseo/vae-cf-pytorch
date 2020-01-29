@@ -246,6 +246,6 @@ def sparse_tensor_from_init(init, weight_key='sparse_weight'):
     # https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor?version=stable
 
     #  summary for tensorboard
-    tf.summary.histogram(weight_key, w.data)
+    tf.summary.histogram(weight_key, w_data)
 
     return w
