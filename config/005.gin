@@ -1,7 +1,7 @@
-# WAE with "shared weights" (except that n_layers == 1)
+# WAE with actual shared weights: 2 layers
 
 build_model.Model = @WAE
-build_model.n_layers = 1
+build_model.n_layers = 2
 build_model.eps = 0.01
 build_model.slim_path = '/home/jvanbalen/experiments/wae/pruned_slim.npz'
 
