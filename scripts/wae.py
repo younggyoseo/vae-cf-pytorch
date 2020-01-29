@@ -28,8 +28,9 @@ def build_model(x_train, Model=WAE, n_layers=3, eps=0.01, slim_path=None):
         pruned_slim = prune_global(slim)
 
     eye = csr_matrix(np.eye(pruned_slim.shape[0]))
-    encoder_inits = [eye + eps * pruned_slim for _ in range(n_layers - 1)]
-    inits = encoder_inits + [pruned_slim]
+    other_inits = [eye + eps * pruned_slim for _ in range(n_layers - 1)]
+    inits = [pruned_slim] + other_inits
+    # other_inits will not be used if shared_weights = True
 
     tf.reset_default_graph()
     model = Model(inits)
