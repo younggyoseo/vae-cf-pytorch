@@ -1,6 +1,6 @@
 """
 Ex.:
-python wae.py --data ~/data/ml-20m/ --log-dir ~/experiments/wae/logs/WAE/ \
+python wae.py --data ~/data/ml-20m/ --logdir ~/experiments/wae/logs/WAE/ \
     --config config/001.gin
 """
 import gin
@@ -42,7 +42,8 @@ if __name__ == '__main__':
 
     parser = ArgumentParser()
     parser.add_argument('--data', help='directory containing pre-processed dataset', type=str)
-    parser.add_argument('--log-dir', help='log directory for tensorboard', type=str)
+    parser.add_argument('--cap', help='cap train/val data for debugging', type=int, default=None)
+    parser.add_argument('--logdir', help='log directory for tensorboard', type=str)
     parser.add_argument('--config', help='path to gin config file', type=str)
     args = parser.parse_args()
 
@@ -55,7 +56,10 @@ if __name__ == '__main__':
     x_val, y_val = loader.load_data('validation')
 
     print('Constructing model...')
-    model = build_model(x_train)
+    model = build_model(x_train)  # don't cap yet, we want realistic sparsities
 
     print('Training...')
-    train(model, x_train, x_val, y_val, log_dir=args.log_dir)
+    if args.cap:
+        x_train = x_train[:args.cap]
+        x_val, y_val = x_val[:args.cap], y_val[:args.cap]
+    train(model, x_train, x_val, y_val, log_dir=args.logdir)

@@ -130,16 +130,26 @@ class MetricLogger(object):
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         log_dir = os.path.join(base_dir, timestamp)
 
-        self.metric = tf.Variable(0.0)
-        self.summary = tf.summary.scalar(metric_name, self.metric)
+        self.metrics = {}
+        self.summaries = {}
         self.summary_writer = tf.summary.FileWriter(log_dir, graph=tf.get_default_graph())
 
         self.history = defaultdict(list)
 
-    def log_metric(self, value):
-
-        summary = self.sess.run(self.summary, feed_dict={self.metric: value})
-        self.log_summaries({self.metric_name: summary})
+    def log_metrics(self, metrics):
+        """Log a dictionary of metrics to a tf.summary.FileWriter
+        """
+        feed_dict = {}
+        summaries = []
+        for name, value in metrics.items():
+            if name not in self.metrics:
+                self.metrics[name] = tf.Variable(0.0, name=name)
+                self.summaries[name] = tf.summary.scalar(name, self.metrics[name])
+            summaries.append(self.summaries[name])
+            feed_dict[self.metrics[name]] = value
+        summaries = self.sess.run(summaries, feed_dict=feed_dict)
+        summaries_dict = dict(zip(metrics.keys(), summaries))
+        self.log_summaries(summaries_dict)
 
     def log_summaries(self, summaries, step=None):
 
@@ -156,6 +166,7 @@ def evaluate(model, sess, x_val, y_val, batch_size=100, metric_logger=None):
     n_val = x_val.shape[0]
     val_inds = list(range(n_val))
 
+    loss_list = []
     ndcg_list = []
     for i_batch, start in enumerate(range(0, n_val, batch_size)):
         print('validation batch {}/{}...'.format(i_batch + 1, int(n_val / batch_size)))
@@ -168,18 +179,20 @@ def evaluate(model, sess, x_val, y_val, batch_size=100, metric_logger=None):
             x = x.toarray()
         x = x.astype('float32')
 
-        y_pred = sess.run(model.logits, feed_dict={model.input_ph: x})
+        y_pred, ae_loss = sess.run([model.logits, model.loss], feed_dict={model.input_ph: x})
         # exclude examples from training and validation (if any)
         y_pred[x.nonzero()] = -np.inf
         ndcg_list.append(ndcg_binary_at_k_batch(y_pred, y))
+        loss_list.append(ae_loss)
 
-    ndcg_list = np.concatenate(ndcg_list)
-    ndcg = ndcg_list.mean()
+    val_ndcg = np.concatenate(ndcg_list).mean()  # mean over n_val
+    val_loss = np.mean(loss_list)  # mean over batches
 
     if metric_logger is not None:
-        metric_logger.log_metric(ndcg)
+        metrics = {'val_ndcg': val_ndcg, 'val_loss': val_loss}
+        metric_logger.log_metrics(metrics)
 
-    return ndcg
+    return val_ndcg, val_loss
 
 
 def train_one_epoch(model, sess, x_train,
