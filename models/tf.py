@@ -9,7 +9,7 @@ import tensorflow as tf
 from scipy.sparse import issparse
 from tensorflow.contrib.layers import apply_regularization, l2_regularizer
 
-from metric import ndcg_binary_at_k_batch
+from metric import ndcg_binary_at_k_batch, recall_at_k_batch
 
 
 @gin.configurable
@@ -168,6 +168,7 @@ def evaluate(model, sess, x_val, y_val, batch_size=100, metric_logger=None):
 
     loss_list = []
     ndcg_list = []
+    r100_list = []
     for i_batch, start in enumerate(range(0, n_val, batch_size)):
         print('validation batch {}/{}...'.format(i_batch + 1, int(n_val / batch_size)))
 
@@ -182,17 +183,19 @@ def evaluate(model, sess, x_val, y_val, batch_size=100, metric_logger=None):
         y_pred, ae_loss = sess.run([model.logits, model.loss], feed_dict={model.input_ph: x})
         # exclude examples from training and validation (if any)
         y_pred[x.nonzero()] = -np.inf
-        ndcg_list.append(ndcg_binary_at_k_batch(y_pred, y))
+        ndcg_list.append(ndcg_binary_at_k_batch(y_pred, y, k=100))
+        r100_list.append(recall_at_k_batch(y_pred, y, k=100))
         loss_list.append(ae_loss)
 
     val_ndcg = np.concatenate(ndcg_list).mean()  # mean over n_val
+    val_r100 = np.concatenate(r100_list).mean()  # mean over n_val
     val_loss = np.mean(loss_list)  # mean over batches
+    metrics = {'val_ndcg': val_ndcg, 'val_r100': val_r100, 'val_loss': val_loss}
 
     if metric_logger is not None:
-        metrics = {'val_ndcg': val_ndcg, 'val_loss': val_loss}
         metric_logger.log_metrics(metrics)
 
-    return val_ndcg, val_loss
+    return metrics
 
 
 def train_one_epoch(model, sess, x_train,
