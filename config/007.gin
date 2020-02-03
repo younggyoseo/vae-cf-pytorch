@@ -1,6 +1,6 @@
-# WAE with actual shared weights: 3 layers
+# MultiWAE with actual shared weights: 3 layers
 
-build_model.Model = @WAE
+build_model.Model = @MultiWAE
 build_model.n_layers = 3
 build_model.slim_path = '/home/jvanbalen/experiments/wae/pruned_slim.npz'
 
