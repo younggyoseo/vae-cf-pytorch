@@ -17,7 +17,12 @@ from models.slim import closed_form_slim
 
 
 @gin.configurable
-def build_model(x_train, Model=WAE, n_layers=3, eps=0.01, slim_path=None):
+def build_model(x_train, Model=WAE, n_layers=3, noise=0.0, eps=0.01, slim_path=None):
+    """Build a wide auto-encoder model with initial weights based on the SLIM
+    item-item matrix.
+    First weight will be the sparse SLIM weights with some noise,
+    the others will be the same weights again, scaled by `eps`.
+    """
 
     if slim_path is not None:
         print('Reading pre-computed SLIM matrix from {}...'.format(slim_path))
@@ -28,12 +33,13 @@ def build_model(x_train, Model=WAE, n_layers=3, eps=0.01, slim_path=None):
         pruned_slim = prune_global(slim)
 
     eye = csr_matrix(np.eye(pruned_slim.shape[0]))
+    r = 1.0 + np.random.rand(*pruned_slim.shape) * noise
+    init_W1 = [r * pruned_slim]
     other_inits = [eye + eps * pruned_slim for _ in range(n_layers - 1)]
-    inits = [pruned_slim] + other_inits
     # other_inits will not be used if shared_weights = True
 
     tf.reset_default_graph()
-    model = Model(inits)
+    model = Model(init_W1 + other_inits)
 
     return model
 

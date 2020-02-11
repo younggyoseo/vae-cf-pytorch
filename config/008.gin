@@ -1,0 +1,16 @@
+# MultiWAE with 3 shared-weight layers, bias and dropout
+
+build_model.Model = @MultiWAE
+build_model.n_layers = 3
+build_model.noise = 0.5
+build_model.slim_path = '/home/jvanbalen/experiments/wae/pruned_slim.npz'
+
+WAE.use_biases = True
+WAE.normalize_inputs = False
+WAE.shared_weights = True
+WAE.keep_prob = 0.8
+WAE.lam = 3e-4
+WAE.lr = 3e-4
+
+train.batch_size = 50
+train.n_epochs = 15
