@@ -33,7 +33,7 @@ def build_model(x_train, Model=WAE, n_layers=3, noise=0.0, eps=0.01, slim_path=N
         pruned_slim = prune_global(slim)
 
     eye = csr_matrix(np.eye(pruned_slim.shape[0]))
-    r = 1.0 + np.random.rand(*pruned_slim.shape) * noise
+    r = 1.0 - noise / 2 + np.random.rand(*pruned_slim.data.shape) * noise
     pruned_slim.data = r * pruned_slim.data
     init_W1 = [pruned_slim]
     other_inits = [eye + eps * pruned_slim for _ in range(n_layers - 1)]
