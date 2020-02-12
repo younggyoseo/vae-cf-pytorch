@@ -230,25 +230,26 @@ def train(model, x_train, x_val, y_val, batch_size=100, n_epochs=10, log_dir=Non
 
     TODO: model snapshots (check lines containing "best_ndcg" in Liang's notebook)
     """
+
     with tf.Session() as sess:
         metric_logger = MetricLogger(log_dir, sess) if log_dir is not None else None
 
         init = tf.global_variables_initializer()
         sess.run(init)
 
-        ndcg = evaluate(model, sess, x_val, y_val, metric_logger=metric_logger)
-        print('Validation NDCG = {}'.format(ndcg))
+        metrics = evaluate(model, sess, x_val, y_val, metric_logger=metric_logger)
+        print('Validation NDCG = {}'.format(metrics))
 
         for epoch in range(n_epochs):
             print('Training. Epoch = {}/{}'.format(epoch + 1, n_epochs))
             train_one_epoch(model, sess, x_train, batch_size=batch_size,
                             metric_logger=metric_logger)
 
-            ndcg = evaluate(model, sess, x_val, y_val, batch_size=batch_size,
-                            metric_logger=metric_logger)
-            print('Validation NDCG = {}'.format(ndcg))
+            metrics = evaluate(model, sess, x_val, y_val, batch_size=batch_size,
+                               metric_logger=metric_logger)
+            print('Validation NDCG = {}'.format(metrics))
 
-    return ndcg
+    return metrics
 
 
 @gin.configurable

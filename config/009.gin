@@ -1,4 +1,4 @@
-# MultiWAE with 3 shared-weight layers, bias and dropout
+# MultiWAE with 1 layer, bias and dropout
 
 build_model.Model = @MultiWAE
 build_model.n_layers = 1
