@@ -251,11 +251,16 @@ def train(model, x_train, x_val, y_val, batch_size=100, n_epochs=10, log_dir=Non
     return ndcg
 
 
-def sparse_tensor_from_init(init, weight_key='sparse_weight'):
+@gin.configurable
+def sparse_tensor_from_init(init, weight_key='sparse_weight', randomize=False, eps=0.001):
 
     init = init.tocoo()
+    init_data = init.data
+    if randomize:
+        init_data = eps * np.random.randn(*init.data.shape)
+
     w_inds = tf.convert_to_tensor(list(zip(init.row, init.col)), dtype=np.int64)
-    w_data = tf.Variable(init.data.astype(np.float32), name=weight_key)
+    w_data = tf.Variable(init_data.astype(np.float32), name=weight_key)
     w = tf.SparseTensor(w_inds, tf.identity(w_data),
                         dense_shape=init.shape)
     w = tf.sparse.reorder(w)  # as suggested here:
