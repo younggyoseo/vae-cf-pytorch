@@ -25,6 +25,8 @@ TensorboardX
 
 You should execute `python data.py` first to download necessary data and preprocess MovieLens-20M dataset.
 
+[ml-20m.zip Download](https://grouplens.org/datasets/movielens/20m/)
+
 <img src="https://raw.githubusercontent.com/belepi93/vae-cf-pytorch/master/pics/data.png" width="500">
 
 # Results
